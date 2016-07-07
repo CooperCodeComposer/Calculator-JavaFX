@@ -294,7 +294,7 @@ public class CalculatorMainClass extends Application {
 				double value = Double.parseDouble(current);
 				value *= -1;  // inverts positive / negative
 				current = String.valueOf(value);
-				display.setText(String.format("%.2f", value));
+				display.setText(formatOutput(value));
 				clearOnNext = true;
 			}
 		});
@@ -347,11 +347,31 @@ public class CalculatorMainClass extends Application {
 			break;
 		}
 		System.out.println("value1 = " + value1 + ", value2 = " + value2 + ", result = " + result);
-		display.setText(String.format("%.2f", result));
+		display.setText(formatOutput(result));
 		stored = String.valueOf(result); // the stored becomes the result
 		clearOnNext = true;
 		
 		return result;   // used to chain operations
+	}
+	
+	/**
+	 * formatOutput method to format the output string
+	 * @param result
+	 * @return
+	 */
+	private String formatOutput(double result) {
+		
+		String output;
+		if (result % 1 == 0) {
+			output = String.format("%.0f", result); 
+		} else {
+			// set number of decimal places
+			output = String.format("%.10f", result); 
+			// remove trailing zeros
+			output = output.indexOf(".") < 0 ? output : output.replaceAll("0*$", "").replaceAll("\\.$", "");
+		}
+		return output;
+		
 	}
 
 	public static void main(String[] args) {
