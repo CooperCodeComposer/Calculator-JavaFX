@@ -1,15 +1,16 @@
 //*************************-=-=-=-=-=-=-=-=-=-=-=-=-**************************// 
 //********************<         JAVA FX CALCULATOR        >*******************//
-//*************************-=-=-=-=  V 1.0  -=-=-==-**************************//
+//*************************-=-=-=-=  V 2.0  -=-=-==-**************************//
 //**************                     AUTHOR                     **************//
 //---------------<_>------->>>   ALISTAIR COOPER   <<<-------<_>--------------//
 //*****************<_>         CREATED: 07/05/2016          <_>***************//
 //**************************-=-=-=-=-=-=-=-=-=-=-=-=-*************************//
 //                                                                            //
 
-
 package JavaFXCalculator_PKG;
 
+import java.util.Random;
+import org.apache.commons.math3.special.Gamma;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -25,10 +26,28 @@ public class CalculatorMainClass extends Application {
 	private String current = "0";
 	private String stored = "0";
 	private String binaryOp = "";
-	private String unaryOp = "";  // currently unused
 	private Label display = new Label(current);
 	private Pane pane = new Pane(); // main pane for calculator
 	private boolean clearOnNext = false;
+	private double memory = 0.0; // value stored in calc memory
+	
+	// Order of operation
+	//----------------------------------------//
+	// first order = ( and )
+	// second order = x^y and x√y
+	// third order = × and ÷
+	// forth order = + and -
+	//----------------------------------------//
+	
+	private double forthOrderOpValue = 0.0; // the result of prior 4th order ops
+	private String forthOrderOp = ""; // + or - operator used before higher order ops
+	private double thirdOrderOpValue = 0.0; // the result of prior 3rd order ops
+	private String thirdOrderOp = ""; // × or ÷ operator used before higher order ops
+
+	
+	// Calculator modes
+	private boolean exponentMode = false; // mode for entering exponents
+	private boolean degMode = true; // Deg mode if true. Rad mode if false
 
 	// Set the width and height of each cell in the grid.
 	private int x_size = 60;
@@ -43,25 +62,25 @@ public class CalculatorMainClass extends Application {
 	private int y_orig = y_spacer;
 
 	// Set the style for the pane, display, and buttons.
-	private String numberBtn_style = "-fx-border-color: grey; -fx-base: #D3D3D3; " 
-							  		 + "-fx-font: 21 arial;";
-	private String binaryBtn_style = "-fx-border-color: grey; -fx-base: #FFA500; " 
-							  		 + "-fx-font: 21 arial; -fx-text-fill: white;";
-	private String display_style = "-fx-border-color: grey; -fx-background-color: #808080;" 
-								   + "-fx-text-fill: white; -fx-font: 28 arial;";
+	private String numberBtn_style = "-fx-border-color: grey; -fx-base: #D3D3D3; " + "-fx-font: 21 arial;";
+	private String binaryStdBtn_style = "-fx-border-color: grey; -fx-base: #FFA500; "
+			+ "-fx-font: 21 arial; -fx-text-fill: white;";
+	private String otherBtn_style = "-fx-border-color: grey; -fx-base: #bdbdbd; " + "-fx-font: 15 arial;";
+	private String display_style = "-fx-border-color: grey; -fx-background-color: #808080;"
+			+ "-fx-text-fill: white; -fx-font: 28 arial;";
 	private String pane_style = "-fx-border-color: black; -fx-background-color: #DCDCDC;";
 
 	@Override // Override the start method in the Application class.
 	public void start(Stage primaryStage) throws Exception {
 		// Create the layout of a calculator
 		// in a grid, 6 rows by 4 columns, as shown here:
-		//     C0  C1  C2  C3
+		//      C0  C1  C2  C3  C4  C5  C6  C7  C8  C9
 		// R0 | |
-		// R1 | C |+/-| % | ÷ |
-		// R2 | 7 | 8 | 9 | × |
-		// R3 | 4 | 5 | 6 | - |
-		// R4 | 1 | 2 | 3 | + |
-		// R5 | - 0 - | . | = |
+		// R1 | ( | ) | mc| m+| m-|mr |AC |+/-| % | ÷ |
+		// R2 | - |x2 |x3 | xy| ex|10x| 7 | 8 | 9 | × |
+		// R3 |1/x| √ | ∛ |n√ |ln |l10| 4 | 5 | 6 | - |
+		// R4 |x! |sin|cos|tan| e | + | 1 | 2 | 3 | + |
+		// R5 |Rad|snh|cnh|tnh| π |rnd| - 0 - | . | = |
 
 		// Set the style for the main calculator pane
 		pane.setStyle(pane_style);
@@ -71,93 +90,163 @@ public class CalculatorMainClass extends Application {
 		display.setAlignment(Pos.BASELINE_RIGHT);
 		display.setLayoutX(x_orig + 0 * (x_size + x_spacer));
 		display.setLayoutY(y_orig + 0 * (y_size + y_spacer));
-		display.setPrefSize(x_size * 4 + x_spacer * 3, y_size);
+		display.setPrefSize(x_size * 10 + x_spacer * 9, y_size);
 		pane.getChildren().add(display);
 
-		// 0 Button: Row 5, Col 0, is not double wide
-		makeNumberButton("0", 5, 0, true);
+		// 0 Button: Row 5, Col 6, is not double wide
+		makeNumberButton("0", 5, 6, true);
 
-		// 1 Button: Row 4, Col 0, is not double wide
-		makeNumberButton("1", 4, 0, false);
+		// 1 Button: Row 4, Col 6, is not double wide
+		makeNumberButton("1", 4, 6, false);
 
-		// 2 Button: Row 4, Col 1, is not double wide
-		makeNumberButton("2", 4, 1, false);
+		// 2 Button: Row 4, Col 7, is not double wide
+		makeNumberButton("2", 4, 7, false);
 
-		// 3 Button: Row 4, Col 2, is not double wide
-		makeNumberButton("3", 4, 2, false);
+		// 3 Button: Row 4, Col 8, is not double wide
+		makeNumberButton("3", 4, 8, false);
 
-		// 4 Button: Row 3, Col 0, is not double wide
-		makeNumberButton("4", 3, 0, false);
+		// 4 Button: Row 3, Col 6, is not double wide
+		makeNumberButton("4", 3, 6, false);
 
-		// 5 Button: Row 3, Col 1, is not double wide
-		makeNumberButton("5", 3, 1, false);
+		// 5 Button: Row 3, Col 7, is not double wide
+		makeNumberButton("5", 3, 7, false);
 
-		// 6 Button: Row 3, Col 2, is not double wide
-		makeNumberButton("6", 3, 2, false);
+		// 6 Button: Row 3, Col 8, is not double wide
+		makeNumberButton("6", 3, 8, false);
 
-		// 7 Button: Row 2, Col 0, is not double wide
-		makeNumberButton("7", 2, 0, false);
+		// 7 Button: Row 2, Col 6, is not double wide
+		makeNumberButton("7", 2, 6, false);
 
-		// 8 Button: Row 2, Col 1, is not double wide
-		makeNumberButton("8", 2, 1, false);
+		// 8 Button: Row 2, Col 7, is not double wide
+		makeNumberButton("8", 2, 7, false);
 
-		// 9 Button: Row 2, Col 2, is not double wide
-		makeNumberButton("9", 2, 2, false);
+		// 9 Button: Row 2, Col 8, is not double wide
+		makeNumberButton("9", 2, 8, false);
 
-		// . Button: Row 5, Col 2
-		makeDecimalButton(5, 2);
+		// . Button: Row 5, Col 8
+		makeDecimalButton(5, 8);
 
-		// + Button: Row 4, Col 3
-		makeBinaryOpBtn("+", 4, 3);
+		// + Button: Row 4, Col 9
+		makeBinaryOpBtn("+", 4, 9);
 
-		// - Button: Row 3, Col 3
-		makeBinaryOpBtn("-", 3, 3);
+		// - Button: Row 3, Col 9
+		makeBinaryOpBtn("-", 3, 9);
 
-		// × Button: Row 2, Col 3
-		makeBinaryOpBtn("×", 2, 3);
+		// × Button: Row 2, Col 9
+		makeBinaryOpBtn("×", 2, 9);
 
-		// ÷ Button: Row 1, Col 3
-		makeBinaryOpBtn("÷", 1, 3);
+		// ÷ Button: Row 1, Col 9
+		makeBinaryOpBtn("÷", 1, 9);
 
-		// % Button: Row 1, Col 2
-		makePercentageBtn("%", 1, 2);
+		// % Button: Row 1, Col 8
+		makePercentageBtn("%", 1, 8);
 
-		// ± Button: Row 1, Col 1
-		makePlusMinusBtn(1, 1);
+		// ± Button: Row 1, Col 7
+		makeUnaryOpBtn("±", 1, 7);
 
-		// C Button: Row 1, Col 0
-		makeClearBtn(1, 0);
+		// C Button: Row 1, Col 6
+		makeClearBtn(1, 6);
 
-		// = Button: Row 5, Col 3
-		Button button_eql = new Button("=");
-		button_eql.setStyle(binaryBtn_style);
-		button_eql.setLayoutX(x_orig + 3 * (x_size + x_spacer));
-		button_eql.setLayoutY(y_orig + 5 * (y_size + y_spacer));
-		button_eql.setPrefSize(x_size, y_size);
-		button_eql.setOnAction(new EventHandler<ActionEvent>() {
-			@Override
-			public void handle(ActionEvent event) {
-				
-				double result = 0.0;
-				
-				if (!binaryOp.equals("")) {
-					result = doCalc();
-				    binaryOp = "";    // clear the operation
-				    
-				    current = String.valueOf(result);   // the result is now the current
-				}
-			}
-		});
-		pane.getChildren().add(button_eql);
+		// mc Button: Row 1, Col 2
+		makeMemoryButton("mc", 1, 2);
+
+		// m+ Button: Row 1, Col 3
+		makeMemoryButton("m+", 1, 3);
+
+		// m- Button: Row 1, Col 4
+		makeMemoryButton("m-", 1, 4);
+
+		// mr Button: Row 1, Col 5
+		makeMemoryButton("mr", 1, 5);
+
+		// x² Button: Row 2, Col 1
+		makeUnaryOpBtn("x²", 2, 1);
+
+		// x³ Button: Row 2, Col 2
+		makeUnaryOpBtn("x³", 2, 2);
+		
+		// x^y Button: Row 2, Col 3
+		makeBinaryOpBtn("x^y", 2, 3);
+
+		// e^x Button: Row 2, Col 4
+		makeUnaryOpBtn("e^x", 2, 4);
+
+		// 10^x Button: Row 2, Col 5
+		makeUnaryOpBtn("10^x", 2, 5);
+
+		// 1/x Button: Row 3, Col 0
+		makeUnaryOpBtn("1/x", 3, 0);
+
+		// √ Button: Row 3, Col 1
+		makeUnaryOpBtn("√", 3, 1);
+
+		// ∛ Button: Row 3, Col 2
+		makeUnaryOpBtn("∛", 3, 2);
+		
+		// y√x Button: Row 3, Col 3
+		makeBinaryOpBtn("y√x", 3, 3);
+
+		// ln Button: Row 3, Col 4
+		makeUnaryOpBtn("ln", 3, 4);
+
+		// log10 Button: Row 3, Col 5
+		makeUnaryOpBtn("log10", 3, 5);
+
+		// x! Button: Row 4, Col 0
+		makeUnaryOpBtn("x!", 4, 0);
+
+		// sin Button: Row 4, Col 1
+		makeUnaryOpBtn("sin", 4, 1);
+
+		// cos Button: Row 4, Col 2
+		makeUnaryOpBtn("cos", 4, 2);
+
+		// tan Button: Row 4, Col 3
+		makeUnaryOpBtn("tan", 4, 3);
+
+		// e Button: Row 4, Col 4
+		makeValueButton("e", 4, 4);
+
+		// EE Button: Row 4, Col 5
+		makeEEButton("EE", 4, 5);
+
+		// DegRad Button: Row 5, Col 0
+		makeDegRadButton("Rad", 5, 0);
+
+		// sinh Button: Row 5, Col 1
+		makeUnaryOpBtn("sinh", 5, 1);
+
+		// cosh Button: Row 5, Col 2
+		makeUnaryOpBtn("cosh", 5, 2);
+
+		// tanh Button: Row 5, Col 3
+		makeUnaryOpBtn("tanh", 5, 3);
+
+		// π Button: Row 5, Col 4
+		makeValueButton("π", 5, 4);
+
+		// Rand Button: Row 5, Col 5
+		makeValueButton("Rand", 5, 5);
+
+		// = Button: Row 5, Col 9
+		makeEqualsButton(5, 9);
+		
 
 		// Set the scene and the primary stage.
-		Scene scene = new Scene(pane, x_size * 4 + x_spacer * 5, y_size * 6 + y_spacer * 7);
+		Scene scene = new Scene(pane, x_size * 10 + x_spacer * 11, y_size * 6 + y_spacer * 7);
 		primaryStage.setTitle("Calculator");
 		primaryStage.setScene(scene);
 		primaryStage.setResizable(false);
 		primaryStage.show();
 	}
-
+	
+	/**
+	 * makeNumberButton method make the number buttons
+	 * @param number
+	 * @param row
+	 * @param column
+	 * @param isDoubleWide
+	 */
 	private void makeNumberButton(String number, int row, int column, boolean isDoubleWide) {
 
 		Button button = new Button(number);
@@ -166,8 +255,9 @@ public class CalculatorMainClass extends Application {
 		button.setLayoutY(y_orig + row * (y_size + y_spacer));
 
 		if (isDoubleWide) {
-			button.setPrefSize(x_size * 2 + x_spacer, y_size); // for number
-																// zero
+			// for number zero
+			button.setPrefSize(x_size * 2 + x_spacer, y_size); 
+			
 		} else {
 			button.setPrefSize(x_size, y_size);
 		}
@@ -175,21 +265,162 @@ public class CalculatorMainClass extends Application {
 		button.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				if (clearOnNext == true) {
-					current = number;
-					clearOnNext = false;
-				} else if (current.equals("0")) {
-					current = number;
+
+				String newDisplay = ""; // string to update display
+
+				// check if exponent mode is on
+				if (exponentMode) {
+					if (display.getText().contains("E 0")) {
+						// if exponent hasn't been entered yet
+						newDisplay = display.getText();
+						display.setText(newDisplay.replace("0", number));
+					} else {
+						// else exponent has begun to be entered
+						newDisplay = display.getText();
+						display.setText(newDisplay += number);
+					}
 				} else {
-					current += number;
+					// exponent mode is not on
+					if (clearOnNext == true) {
+						current = number;
+						clearOnNext = false;
+					} else if (current.equals("0")) {
+						current = number;
+					} else {
+						current += number;
+					}
+					display.setText(current);
 				}
+			}
+		});
+		pane.getChildren().add(button);
+	}
+
+	/**
+	 * makeMemoryButton method makes buttons for "mc" "m+" m-" and "mr"
+	 * 
+	 * @param symbol
+	 * @param row
+	 * @param column
+	 */
+	private void makeMemoryButton(String symbol, int row, int column) {
+
+		Button button = new Button(symbol);
+		button.setStyle(numberBtn_style);
+		button.setLayoutX(x_orig + column * (x_size + x_spacer));
+		button.setLayoutY(y_orig + row * (y_size + y_spacer));
+		button.setPrefSize(x_size, y_size);
+
+		button.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				
+				// if exponent mode is on update current value
+				if (exponentMode) {
+					convertExponent();
+					exponentMode = false;
+				}
+
+				switch (symbol) {
+				case "mc":
+					memory = 0.0;
+					break;
+				case "m+":
+					memory = memory + Double.valueOf(current);
+					break;
+				case "m-":
+					memory = memory - Double.valueOf(current);
+					break;
+				case "mr":
+					current = String.valueOf(memory);
+					display.setText(formatOutput(memory));
+					break;
+				default:
+					break;
+				}
+				clearOnNext = true;
+			}
+		});
+		pane.getChildren().add(button);
+	}
+
+	/**
+	 * makeValueButton method make buttons for "e" "π" and "Rand"
+	 * 
+	 * @param symbol
+	 * @param row
+	 * @param column
+	 */
+	private void makeValueButton(String symbol, int row, int column) {
+
+		Button button = new Button(symbol);
+		button.setStyle(otherBtn_style);
+		button.setLayoutX(x_orig + column * (x_size + x_spacer));
+		button.setLayoutY(y_orig + row * (y_size + y_spacer));
+		button.setPrefSize(x_size, y_size);
+
+		button.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+				
+				// cancel exponent mode
+				exponentMode = false;
+				
+				switch (symbol) {
+				case "e":
+					current = String.valueOf(2.718281828459045);
+					break;
+				case "π":
+					current = String.valueOf(3.141592653589793);
+					break;
+				case "Rand":
+					Random rand = new Random();
+					current = String.valueOf(rand.nextDouble());
+					break;
+				default:
+					current = "";
+					break;
+				}
+
+				clearOnNext = true;
 				display.setText(current);
 			}
 		});
 		pane.getChildren().add(button);
-
 	}
+	
+	/**
+	 * makeEEButton method makes exponent button
+	 * @param symbol
+	 * @param row
+	 * @param column
+	 */
+	private void makeEEButton(String symbol, int row, int column) {
 
+		Button button = new Button(symbol);
+		button.setStyle(otherBtn_style);
+		button.setLayoutX(x_orig + column * (x_size + x_spacer));
+		button.setLayoutY(y_orig + row * (y_size + y_spacer));
+		button.setPrefSize(x_size, y_size);
+
+		button.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+
+				exponentMode = true; // now next number entered becomes exponent
+
+				display.setText(current + " E" + " 0");
+				clearOnNext = false;
+			}
+		});
+		pane.getChildren().add(button);
+	}
+	
+	/**
+	 * makeDecimalButton method makes the decimal point button
+	 * @param row
+	 * @param column
+	 */
 	private void makeDecimalButton(int row, int column) {
 
 		Button button = new Button(".");
@@ -201,48 +432,220 @@ public class CalculatorMainClass extends Application {
 		button.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				if (clearOnNext == true) {
-					current = ".";
-					clearOnNext = false;
-				} else if (current.equals("0")) {
-					current = ".";
-				} else if (!current.contains(".")) {
-					current += "."; // makes sure there's only 1 decimal point
-				}
-
-				display.setText(current);
+				
+				// do nothing if exponent mode is on
+				if (!exponentMode) {
+					if (clearOnNext == true) {
+						current = ".";
+						clearOnNext = false;
+					} else if (current.equals("0")) {
+						current = ".";
+					} else if (!current.contains(".")) {
+						current += "."; // makes sure there's only 1 decimal point
+					}
+					display.setText(current);
+				} 
+				
 			}
 		});
 		pane.getChildren().add(button);
 
 	}
-
+	
+	/**
+	 * makeBinaryOpBtn method makes binary operation buttons
+	 * @param operator
+	 * @param row
+	 * @param column
+	 */
 	private void makeBinaryOpBtn(String operator, int row, int column) {
 
 		Button button = new Button(operator);
-		button.setStyle(binaryBtn_style);
+		button.setStyle(binaryStdBtn_style);
 		button.setLayoutX(x_orig + column * (x_size + x_spacer));
 		button.setLayoutY(y_orig + row * (y_size + y_spacer));
 		button.setPrefSize(x_size, y_size);
+		
+		// change style for these buttons 
+		if (operator.equals("x^y") || operator.equals("y√x") ) {
+			button.setStyle(otherBtn_style);
+		}
+		
 		button.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
+
+				double result = 0.0;
+				double lowerOrderOpResult = 0.0; // the result of potential lower order ops
+				double value1 = 0.0;
+				double value2 = 0.0;
+
+				String previousOp = binaryOp;
+				String currentOp = operator;
 				
-				double result = Double.parseDouble(stored);
-				
-				if (binaryOp.equals("")) {
-					// if there wasn't previously an operator set 
-					// sets the stored to current
-					stored = current;
-					
-				} else {
-					// there was previously an operator set 
-					// evaluate the previous calculation
-					result = doCalc();
-					stored = String.valueOf(result);
-					
+				// if exponent mode is on update current value
+				if (exponentMode) {
+					convertExponent();
+					exponentMode = false;
 				}
+				
+				// set values
+				value1 = Double.parseDouble(stored);
+				value2 = Double.parseDouble(current); 
+				
+				// conditional statements to deal with order of ops and chaining
+				if (currentOp.equals("x^y") || currentOp.equals("y√x") ) {
 					
+					if (previousOp.equals("")) {
+						// if there wasn't previously an operator set
+						// sets the stored to current
+						stored = current;
+
+					} else if (previousOp.equals("×") || previousOp.equals("÷")) {
+						// store the op and value in case of higher order chaining
+						thirdOrderOpValue = Double.parseDouble(stored);
+						thirdOrderOp = previousOp;
+						System.out.println("Stored thirdOrderOpValue: " + thirdOrderOpValue);
+						System.out.println("Stored thirdOrderOp: " + thirdOrderOp);
+						stored = current;
+
+					} else if (previousOp.equals("+") || previousOp.equals("-")) {
+						// store the op and value in case of higher order chaining
+						forthOrderOpValue = Double.parseDouble(stored);
+						forthOrderOp = previousOp;
+						System.out.println("Stored forthOrderOpValue: " + forthOrderOpValue);
+						System.out.println("Stored forthOrderOp: " + forthOrderOp);
+						stored = current;
+
+					} else {
+						// the previous operator is x^y or y√x
+						result = doCalc(previousOp, value1, value2);
+						// stored becomes the result value
+						stored = String.valueOf(result); 
+					}
+					
+				} else if (currentOp.equals("×") || currentOp.equals("÷")) {
+					if (previousOp.equals("")) {
+						// if there wasn't previously an operator set
+						// sets the stored to current
+						stored = current;
+
+					} else if (previousOp.equals("x^y") || previousOp.equals("y√×")) {
+						// evaluate the previous chain 
+						result = doCalc(previousOp, value1, value2);
+
+						if (!thirdOrderOp.equals("")) {
+							// calculate prior third order chain
+							lowerOrderOpResult = doCalc(thirdOrderOp, thirdOrderOpValue, result);
+							thirdOrderOp = ""; // clears the thirdOrderOp operation
+							thirdOrderOpValue = 0.0; // clears the thirdOrderOpValue
+							
+							// stored becomes the lower order op result
+							stored = String.valueOf(lowerOrderOpResult);
+							
+							// calculate prior forth order chain
+							if (!forthOrderOp.equals("")) {
+								// calculate prior forth order chain
+								double forthOrderOpResult = doCalc(forthOrderOp, forthOrderOpValue, lowerOrderOpResult);
+								forthOrderOp = ""; // clears the forthOrderOp operation
+								forthOrderOpValue = 0.0; // clears the forthOrderOpValue
+								
+								// stored becomes the lower order op result
+								stored = String.valueOf(forthOrderOpResult);
+								
+							}
+							
+						} else {
+							// stored becomes the result
+							stored = String.valueOf(result); 
+							System.out.println("Stored = " + stored);
+						}
+
+					} else if (previousOp.equals("+") || previousOp.equals("-")) {
+						// set forth order op and value
+						forthOrderOpValue = Double.parseDouble(stored);
+						forthOrderOp = previousOp;
+						System.out.println("Stored forthOrderOpValue: " + forthOrderOpValue);
+						System.out.println("Stored forthOrderOp: " + forthOrderOp);
+						
+						stored = current;
+
+					} else {
+						// the previous operator is × or ÷
+						result = doCalc(previousOp, value1, value2);
+						// stored becomes the result
+						stored = String.valueOf(result); 
+
+					}
+
+				} else {
+					// current operator is + or -
+					if (previousOp.equals("")) {
+						// if there wasn't previously an operator set
+						// sets the stored to current
+						stored = current;
+						
+
+					} else if (previousOp.equals("x^y") || previousOp.equals("y√x")) {
+						// evaluate the previous chain 
+						result = doCalc(previousOp, value1, value2);
+
+						if (!thirdOrderOp.equals("")) {
+							// calculate prior third order chain
+							lowerOrderOpResult = doCalc(thirdOrderOp, thirdOrderOpValue, result);
+							thirdOrderOp = ""; // clears the forthOrderOp operation
+							thirdOrderOpValue = 0.0; // clears the forthOrderOpValue
+							
+							// stored becomes the lower order op result
+							stored = String.valueOf(lowerOrderOpResult); 
+							
+							if (!forthOrderOp.equals("")) {
+								// calculate prior forth order chain
+								double forthOrderOpResult = doCalc(forthOrderOp, forthOrderOpValue, lowerOrderOpResult);
+								
+								// set forth order op and value
+								forthOrderOpValue = forthOrderOpResult;
+								forthOrderOp = currentOp;
+								System.out.println("Stored forthOrderOpValue: " + forthOrderOpValue);
+								System.out.println("Stored forthOrderOp: " + forthOrderOp);
+								
+								// stored becomes the lower order op result
+								stored = String.valueOf(forthOrderOpResult);
+								
+							}
+						} else {
+							// stored becomes the result
+							stored = String.valueOf(result); 
+							System.out.println("Stored = " + stored);
+						}
+
+					} else if (previousOp.equals("×") || previousOp.equals("÷")) {
+						
+						// evaluate previous chain
+						result = doCalc(previousOp, value1, value2);
+
+						if (!forthOrderOp.equals("")) {
+							// calculate prior forth order chain
+							lowerOrderOpResult = doCalc(forthOrderOp, forthOrderOpValue, result);
+							forthOrderOp = ""; // clears the forthOrderOp operation
+							forthOrderOpValue = 0.0; // clears the forthOrderOp value
+							
+							// stored becomes the lower order op result
+							stored = String.valueOf(lowerOrderOpResult); 
+						} else {
+							// stored becomes result
+							stored = String.valueOf(result); 
+							
+							System.out.println("Stored = " + stored);
+						}
+					} else {
+						// the previous operator is + or -
+						result = doCalc(previousOp, value1, value2);
+						// stored becomes result
+						stored = String.valueOf(result); 
+					} 
+				}
+
 				binaryOp = operator;
 				clearOnNext = true;
 			}
@@ -250,40 +653,98 @@ public class CalculatorMainClass extends Application {
 		pane.getChildren().add(button);
 	}
 
+	/**
+	 * makeDegRadButton method make button to change between deg and rad mode
+	 * 
+	 * @param symbol
+	 * @param row
+	 * @param column
+	 */
+	private void makeDegRadButton(String symbol, int row, int column) {
+
+		Button button = new Button(symbol);
+		button.setStyle(otherBtn_style);
+		button.setLayoutX(x_orig + column * (x_size + x_spacer));
+		button.setLayoutY(y_orig + row * (y_size + y_spacer));
+		button.setPrefSize(x_size, y_size);
+
+		button.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+
+				if (button.getText().equals("Rad")) {
+					button.setText("Deg");
+					degMode = false; // now in Radians mode
+				} else {
+					button.setText("Rad");
+					degMode = true; // now in Degrees mode
+				}
+
+				clearOnNext = false;
+
+			}
+		});
+		pane.getChildren().add(button);
+	}
+	
+	/**
+	 * makePercentageBtn method makes the percentage button
+	 * @param operator
+	 * @param row
+	 * @param column
+	 */
 	private void makePercentageBtn(String operator, int row, int column) {
 
 		Button button = new Button(operator);
-		button.setStyle(numberBtn_style);
+		button.setStyle(otherBtn_style);
 		button.setLayoutX(x_orig + column * (x_size + x_spacer));
 		button.setLayoutY(y_orig + row * (y_size + y_spacer));
 		button.setPrefSize(x_size, y_size);
 		button.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-					
-				double value = Double.parseDouble(current);
+
+				double value = 0.0;
 				double result = 0.0;
 				
-				if(binaryOp.equals("")) {
+				// if exponent mode is on update current value
+				if (exponentMode) {
+					convertExponent();
+					exponentMode = false;
+				}
+				
+				value = Double.parseDouble(current);
+				
+				if (binaryOp.equals("")) {
 					result = value / 100;
-					current = String.valueOf(result);  // assigns result to current
+					// assigns result to current
+					current = String.valueOf(result); 
+														
 					display.setText(String.format("%12f", result));
 				} else {
 					result = (Double.parseDouble(stored) * value) / 100;
-					current = String.valueOf(result);   // the chosen % of the original value
+					// the chosen % of the original value
+					current = String.valueOf(result); 
+														
 					display.setText(current);
 				}
-				
+
 				clearOnNext = true;
 			}
 		});
 		pane.getChildren().add(button);
 	}
+	
+	/**
+	 * makeUnaryOpBtn method makes all unary op buttons
+	 * @param operator
+	 * @param row
+	 * @param column
+	 */
+	private void makeUnaryOpBtn(String operator, int row, int column) {
 
-	private void makePlusMinusBtn(int row, int column) {
-
-		Button button = new Button("±");
-		button.setStyle(numberBtn_style);
+		Button button = new Button(operator);
+		button.setStyle(otherBtn_style);
 		button.setLayoutX(x_orig + column * (x_size + x_spacer));
 		button.setLayoutY(y_orig + row * (y_size + y_spacer));
 		button.setPrefSize(x_size, y_size);
@@ -291,8 +752,84 @@ public class CalculatorMainClass extends Application {
 			@Override
 			public void handle(ActionEvent event) {
 
-				double value = Double.parseDouble(current);
-				value *= -1;  // inverts positive / negative
+				double value = 0.0; 
+				
+				// if exponent mode is on update current value
+				if (exponentMode) {
+					convertExponent();
+					exponentMode = false;
+				}
+				
+				// set value to current
+				value = Double.parseDouble(current);
+
+				switch (operator) {
+				case "±":
+					value *= -1; // inverts positive / negative
+					break;
+				case "x²":
+					value = Math.pow(value, 2);
+					break;
+				case "x³":
+					value = Math.pow(value, 3);
+					break;
+				case "e^x":
+					value = Math.exp(value);
+					break;
+				case "10^x":
+					value = Math.pow(10, value);
+					break;
+				case "1/x":
+					value = 1 / value;
+					break;
+				case "√":
+					value = Math.sqrt(value);
+					break;
+				case "∛":
+					value = Math.cbrt(value);
+					break;
+				case "ln":
+					value = Math.log(value);
+					break;
+				case "log10":
+					value = Math.log10(value);
+					break;
+				case "x!":
+					// works with factorials of decimal values
+					value = Gamma.gamma(value + 1);
+					break;
+				case "sin":
+					if (degMode) {
+						value = Math.sin(Math.toRadians(value));
+					} else {
+						value = Math.sin(value);
+					}
+					break;
+				case "cos":
+					if (degMode) {
+						value = Math.cos(Math.toRadians(value));
+					} else {
+						value = Math.cos(value);
+					}
+					break;
+				case "tan":
+					if (degMode) {
+						value = Math.tan(Math.toRadians(value));
+					} else {
+						value = Math.tan(value);
+					}
+					break;
+				case "sinh":
+					value = Math.sinh(value);
+					break;
+				case "cosh":
+					value = Math.cosh(value);
+					break;
+				case "tanh":
+					value = Math.tanh(value);
+					break;
+				}
+
 				current = String.valueOf(value);
 				display.setText(formatOutput(value));
 				clearOnNext = true;
@@ -301,22 +838,30 @@ public class CalculatorMainClass extends Application {
 		pane.getChildren().add(button);
 	}
 	
+	/**
+	 * makeClearButton method makes the clear button
+	 * @param row
+	 * @param column
+	 */
 	private void makeClearBtn(int row, int column) {
 
 		Button button = new Button("AC");
-		button.setStyle(numberBtn_style);
+		button.setStyle(otherBtn_style);
 		button.setLayoutX(x_orig + column * (x_size + x_spacer));
 		button.setLayoutY(y_orig + row * (y_size + y_spacer));
 		button.setPrefSize(x_size, y_size);
 		button.setOnAction(new EventHandler<ActionEvent>() {
 			@Override
 			public void handle(ActionEvent event) {
-				
+
 				current = "0";
 				stored = "0";
 				binaryOp = "";
-				unaryOp = "";
-				
+				thirdOrderOp = "";
+				thirdOrderOpValue = 0.0;
+				forthOrderOp = "";
+				forthOrderOpValue = 0.0;
+
 				display.setText(String.valueOf(current));
 				clearOnNext = true;
 			}
@@ -324,12 +869,122 @@ public class CalculatorMainClass extends Application {
 		pane.getChildren().add(button);
 	}
 
-	private double doCalc() {
+	/**
+	 * convertExponent method updates the "current" value to the displayed
+	 * exponent value
+	 * 
+	 */
+	private void convertExponent() {
 
-		double value1 = Double.parseDouble(stored);
-		double value2 = Double.parseDouble(current);
+		double value = 0.0;
+		double exponent = 0.0;
+		double output = 0.0;
+		String s = ""; // to hold display text
+		
+		s = display.getText();
+		
+		// get index position of E
+		int indexOfE = s.indexOf("E");
+		
+		value = Double.valueOf(s.substring(0, (indexOfE - 1) ));
+		exponent = Double.valueOf(s.substring(s.lastIndexOf('E') + 1));
+		
+		output = value * Math.pow(10, exponent); // do exponent calculation
+		
+		current = String.valueOf(output); // update current value
+		
+		clearOnNext = true;
+	}
+	
+	/**
+	 * makeEqualsButton method makes the equals button
+	 * @param row
+	 * @param column
+	 */
+	private void makeEqualsButton(int row, int column) {
+
+		Button button_eql = new Button("=");
+		button_eql.setStyle(binaryStdBtn_style);
+		button_eql.setLayoutX(x_orig + column * (x_size + x_spacer));
+		button_eql.setLayoutY(y_orig + row * (y_size + y_spacer));
+		button_eql.setPrefSize(x_size, y_size);
+		button_eql.setOnAction(new EventHandler<ActionEvent>() {
+			@Override
+			public void handle(ActionEvent event) {
+
+				double value1 = 0.0; 
+				double value2 = 0.0; 
+				double result = 0.0;
+				// result of lower order operations
+				double chainResult = 0.0; 
+				
+				// if exponent mode is on update current value
+				if (exponentMode) {
+					convertExponent();
+					display.setText(formatOutput(Double.valueOf(current)));
+					exponentMode = false;
+				}
+				
+				// set the stored and current values
+				value1 = Double.parseDouble(stored);
+				value2 = Double.parseDouble(current);
+
+				if (!binaryOp.equals("")) {
+					result = doCalc(binaryOp, value1, value2);
+					binaryOp = ""; // clear the operation
+					
+					// the current becomes the result
+					current = String.valueOf(result); 
+					
+					// calculate previous chain of third order ops
+					if (!thirdOrderOp.equals("")) {
+						chainResult = doCalc(thirdOrderOp, thirdOrderOpValue, result);
+						// current becomes chain result
+						current = String.valueOf(chainResult); 
+						
+						// if also forth order op chain
+						if (!forthOrderOp.equals("")) {
+							value2 = chainResult;
+							chainResult = doCalc(forthOrderOp, forthOrderOpValue, value2);
+							// current becomes chain result
+							current = String.valueOf(chainResult); 
+							
+							forthOrderOp = ""; // clears the forthOrderOp
+						}
+						
+					}
+					
+					// calculate previous chain of forth order ops
+					if (!forthOrderOp.equals("")) {
+						chainResult = doCalc(forthOrderOp, forthOrderOpValue, result);
+						// current becomes chain result
+						current = String.valueOf(chainResult); 
+					}
+				}
+				
+				thirdOrderOp = ""; // clear the thirdOrderOp
+				thirdOrderOpValue = 0.0; // clears thirdOrderOpValue
+				forthOrderOp = ""; // clears the forthOrderOp
+				forthOrderOpValue = 0.0; // clears forthOrderOpValue
+			}
+		});
+		pane.getChildren().add(button_eql);
+
+	}
+
+	/**
+	 * doCalc method performs binary calculations
+	 * 
+	 * @param operator
+	 * @param value1
+	 * @param value2
+	 * @return
+	 */
+	private double doCalc(String operator, double value1, double value2) {
+		
 		double result = 0.0;
-		switch (binaryOp) {
+
+		switch (operator) {
 		case "+":
 			result = value1 + value2;
 			break;
@@ -342,6 +997,12 @@ public class CalculatorMainClass extends Application {
 		case "÷":
 			result = value1 / value2;
 			break;
+		case "x^y":
+			result = Math.pow(value1, value2);
+			break;
+		case "y√x":
+			result = Math.pow(Math.E, Math.log(value1)/value2);
+			break;
 		default:
 			result = 0.0;
 			break;
@@ -350,28 +1011,29 @@ public class CalculatorMainClass extends Application {
 		display.setText(formatOutput(result));
 		stored = String.valueOf(result); // the stored becomes the result
 		clearOnNext = true;
-		
-		return result;   // used to chain operations
+
+		return result;
 	}
-	
+
 	/**
 	 * formatOutput method to format the output string
+	 * 
 	 * @param result
 	 * @return
 	 */
 	private String formatOutput(double result) {
-		
+
 		String output;
 		if (result % 1 == 0) {
-			output = String.format("%.0f", result); 
+			output = String.format("%.0f", result);
 		} else {
 			// set number of decimal places
-			output = String.format("%.10f", result); 
+			output = String.format("%.15f", result);
 			// remove trailing zeros
 			output = output.indexOf(".") < 0 ? output : output.replaceAll("0*$", "").replaceAll("\\.$", "");
 		}
 		return output;
-		
+
 	}
 
 	public static void main(String[] args) {
