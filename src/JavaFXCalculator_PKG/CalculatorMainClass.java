@@ -1,6 +1,6 @@
 //*************************-=-=-=-=-=-=-=-=-=-=-=-=-**************************// 
 //********************<         JAVA FX CALCULATOR        >*******************//
-//*************************-=-=-=-=  V 2.0  -=-=-==-**************************//
+//*************************-=-=-=-=  V 2.1  -=-=-==-**************************//
 //**************                     AUTHOR                     **************//
 //---------------<_>------->>>   ALISTAIR COOPER   <<<-------<_>--------------//
 //*****************<_>         CREATED: 07/05/2016          <_>***************//
@@ -80,7 +80,7 @@ public class CalculatorMainClass extends Application {
 		// R2 | - |x2 |x3 | xy| ex|10x| 7 | 8 | 9 | × |
 		// R3 |1/x| √ | ∛ |n√ |ln |l10| 4 | 5 | 6 | - |
 		// R4 |x! |sin|cos|tan| e | + | 1 | 2 | 3 | + |
-		// R5 |Rad|snh|cnh|tnh| π |rnd| - 0 - | . | = |
+		// R5 |Rad|snh|cnh|tnh| π  |rnd| - 0 - | . | = |
 
 		// Set the style for the main calculator pane
 		pane.setStyle(pane_style);
@@ -222,8 +222,8 @@ public class CalculatorMainClass extends Application {
 		// tanh Button: Row 5, Col 3
 		makeUnaryOpBtn("tanh", 5, 3);
 
-		// π Button: Row 5, Col 4
-		makeValueButton("π", 5, 4);
+		// π  Button: Row 5, Col 4
+		makeValueButton("π ", 5, 4);
 
 		// Rand Button: Row 5, Col 5
 		makeValueButton("Rand", 5, 5);
@@ -345,7 +345,7 @@ public class CalculatorMainClass extends Application {
 	}
 
 	/**
-	 * makeValueButton method make buttons for "e" "π" and "Rand"
+	 * makeValueButton method make buttons for "e" "π " and "Rand"
 	 * 
 	 * @param symbol
 	 * @param row
@@ -370,7 +370,7 @@ public class CalculatorMainClass extends Application {
 				case "e":
 					current = String.valueOf(2.718281828459045);
 					break;
-				case "π":
+				case "π ":
 					current = String.valueOf(3.141592653589793);
 					break;
 				case "Rand":
