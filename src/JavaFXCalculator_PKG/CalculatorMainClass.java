@@ -1,6 +1,6 @@
 //*************************-=-=-=-=-=-=-=-=-=-=-=-=-**************************// 
 //********************<         JAVA FX CALCULATOR        >*******************//
-//*************************-=-=-=-=  V 2.1  -=-=-==-**************************//
+//*************************-=-=-=-=  V 2.2  -=-=-==-**************************//
 //**************                     AUTHOR                     **************//
 //---------------<_>------->>>   ALISTAIR COOPER   <<<-------<_>--------------//
 //*****************<_>         CREATED: 07/05/2016          <_>***************//
@@ -34,7 +34,7 @@ public class CalculatorMainClass extends Application {
 	// Order of operation
 	//----------------------------------------//
 	// first order = ( and )
-	// second order = x^y and x√y
+	// second order = x\u005Ey and x\u221Ay (x to the power y and y root x)
 	// third order = × and ÷
 	// forth order = + and -
 	//----------------------------------------//
@@ -72,15 +72,6 @@ public class CalculatorMainClass extends Application {
 
 	@Override // Override the start method in the Application class.
 	public void start(Stage primaryStage) throws Exception {
-		// Create the layout of a calculator
-		// in a grid, 6 rows by 4 columns, as shown here:
-		//      C0  C1  C2  C3  C4  C5  C6  C7  C8  C9
-		// R0 | |
-		// R1 | ( | ) | mc| m+| m-|mr |AC |+/-| % | ÷ |
-		// R2 | - |x2 |x3 | xy| ex|10x| 7 | 8 | 9 | × |
-		// R3 |1/x| √ | ∛ |n√ |ln |l10| 4 | 5 | 6 | - |
-		// R4 |x! |sin|cos|tan| e | + | 1 | 2 | 3 | + |
-		// R5 |Rad|snh|cnh|tnh| π  |rnd| - 0 - | . | = |
 
 		// Set the style for the main calculator pane
 		pane.setStyle(pane_style);
@@ -141,8 +132,8 @@ public class CalculatorMainClass extends Application {
 		// % Button: Row 1, Col 8
 		makePercentageBtn("%", 1, 8);
 
-		// ± Button: Row 1, Col 7
-		makeUnaryOpBtn("±", 1, 7);
+		// plus minus Button: Row 1, Col 7
+		makeUnaryOpBtn("\u00B1", 1, 7);
 
 		// C Button: Row 1, Col 6
 		makeClearBtn(1, 6);
@@ -159,32 +150,32 @@ public class CalculatorMainClass extends Application {
 		// mr Button: Row 1, Col 5
 		makeMemoryButton("mr", 1, 5);
 
-		// x² Button: Row 2, Col 1
-		makeUnaryOpBtn("x²", 2, 1);
+		// x squared Button: Row 2, Col 1
+		makeUnaryOpBtn("x\u00B2", 2, 1);
 
-		// x³ Button: Row 2, Col 2
-		makeUnaryOpBtn("x³", 2, 2);
+		// x cubed Button: Row 2, Col 2
+		makeUnaryOpBtn("x\u00B3", 2, 2);
 		
-		// x^y Button: Row 2, Col 3
-		makeBinaryOpBtn("x^y", 2, 3);
+		// x to the power y Button: Row 2, Col 3
+		makeBinaryOpBtn("x\u005Ey", 2, 3);
 
-		// e^x Button: Row 2, Col 4
-		makeUnaryOpBtn("e^x", 2, 4);
+		// e to the power x Button: Row 2, Col 4
+		makeUnaryOpBtn("e\u005Ex", 2, 4);
 
-		// 10^x Button: Row 2, Col 5
-		makeUnaryOpBtn("10^x", 2, 5);
+		// 10 to the power x Button: Row 2, Col 5
+		makeUnaryOpBtn("10\u005Ex", 2, 5);
 
 		// 1/x Button: Row 3, Col 0
 		makeUnaryOpBtn("1/x", 3, 0);
 
-		// √ Button: Row 3, Col 1
-		makeUnaryOpBtn("√", 3, 1);
+		// square root Button: Row 3, Col 1
+		makeUnaryOpBtn("\u221A", 3, 1);
 
-		// ∛ Button: Row 3, Col 2
-		makeUnaryOpBtn("∛", 3, 2);
+		// cube root Button: Row 3, Col 2
+		makeUnaryOpBtn("\u221B", 3, 2);
 		
-		// y√x Button: Row 3, Col 3
-		makeBinaryOpBtn("y√x", 3, 3);
+		// y to the root x Button: Row 3, Col 3
+		makeBinaryOpBtn("y\u221Ax", 3, 3);
 
 		// ln Button: Row 3, Col 4
 		makeUnaryOpBtn("ln", 3, 4);
@@ -222,8 +213,8 @@ public class CalculatorMainClass extends Application {
 		// tanh Button: Row 5, Col 3
 		makeUnaryOpBtn("tanh", 5, 3);
 
-		// π  Button: Row 5, Col 4
-		makeValueButton("π ", 5, 4);
+		// pi  Button: Row 5, Col 4
+		makeValueButton("\u03C0 ", 5, 4);
 
 		// Rand Button: Row 5, Col 5
 		makeValueButton("Rand", 5, 5);
@@ -345,7 +336,7 @@ public class CalculatorMainClass extends Application {
 	}
 
 	/**
-	 * makeValueButton method make buttons for "e" "π " and "Rand"
+	 * makeValueButton method make buttons for "e" "pi" and "Rand"
 	 * 
 	 * @param symbol
 	 * @param row
@@ -370,7 +361,7 @@ public class CalculatorMainClass extends Application {
 				case "e":
 					current = String.valueOf(2.718281828459045);
 					break;
-				case "π ":
+				case "\u03C0 ": // pi
 					current = String.valueOf(3.141592653589793);
 					break;
 				case "Rand":
@@ -467,7 +458,7 @@ public class CalculatorMainClass extends Application {
 		button.setPrefSize(x_size, y_size);
 		
 		// change style for these buttons 
-		if (operator.equals("x^y") || operator.equals("y√x") ) {
+		if (operator.equals("x\u005Ey") || operator.equals("y\u221Ax") ) {
 			button.setStyle(otherBtn_style);
 		}
 		
@@ -494,7 +485,7 @@ public class CalculatorMainClass extends Application {
 				value2 = Double.parseDouble(current); 
 				
 				// conditional statements to deal with order of ops and chaining
-				if (currentOp.equals("x^y") || currentOp.equals("y√x") ) {
+				if (currentOp.equals("x\u005Ey") || currentOp.equals("y\u221Ax") ) {
 					
 					if (previousOp.equals("")) {
 						// if there wasn't previously an operator set
@@ -518,7 +509,7 @@ public class CalculatorMainClass extends Application {
 						stored = current;
 
 					} else {
-						// the previous operator is x^y or y√x
+						// the previous operator is x to the power y or y root x
 						result = doCalc(previousOp, value1, value2);
 						// stored becomes the result value
 						stored = String.valueOf(result); 
@@ -530,7 +521,7 @@ public class CalculatorMainClass extends Application {
 						// sets the stored to current
 						stored = current;
 
-					} else if (previousOp.equals("x^y") || previousOp.equals("y√×")) {
+					} else if (previousOp.equals("x\u005Ey") || previousOp.equals("y\u221A×")) {
 						// evaluate the previous chain 
 						result = doCalc(previousOp, value1, value2);
 
@@ -586,7 +577,7 @@ public class CalculatorMainClass extends Application {
 						stored = current;
 						
 
-					} else if (previousOp.equals("x^y") || previousOp.equals("y√x")) {
+					} else if (previousOp.equals("x\u005Ey") || previousOp.equals("y\u221Ax")) {
 						// evaluate the previous chain 
 						result = doCalc(previousOp, value1, value2);
 
@@ -764,28 +755,28 @@ public class CalculatorMainClass extends Application {
 				value = Double.parseDouble(current);
 
 				switch (operator) {
-				case "±":
+				case "\u00B1": // plus minus sign
 					value *= -1; // inverts positive / negative
 					break;
-				case "x²":
+				case "x\u00B2": // x squared
 					value = Math.pow(value, 2);
 					break;
-				case "x³":
+				case "x\u00B3": // x cubed
 					value = Math.pow(value, 3);
 					break;
-				case "e^x":
+				case "e\u005Ex": // e to the power x
 					value = Math.exp(value);
 					break;
-				case "10^x":
+				case "10\u005Ex": // 10 to the power x
 					value = Math.pow(10, value);
 					break;
 				case "1/x":
 					value = 1 / value;
 					break;
-				case "√":
+				case "\u221A": // square root
 					value = Math.sqrt(value);
 					break;
-				case "∛":
+				case "\u221B": // cube root
 					value = Math.cbrt(value);
 					break;
 				case "ln":
@@ -997,10 +988,10 @@ public class CalculatorMainClass extends Application {
 		case "÷":
 			result = value1 / value2;
 			break;
-		case "x^y":
+		case "x\u005Ey":
 			result = Math.pow(value1, value2);
 			break;
-		case "y√x":
+		case "y\u221Ax":
 			result = Math.pow(Math.E, Math.log(value1)/value2);
 			break;
 		default:
